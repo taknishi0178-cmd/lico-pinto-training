@@ -21,17 +21,8 @@ body{overscroll-behavior:none}main{max-width:600px;margin:auto;padding:calc(14px
 .board.running .cell{border-radius:5px;border-color:#dfe8e5;background:rgba(255,255,255,.34)}
 .board.running .cell-number{font-size:clamp(42px,14vw,100px);opacity:.15;color:#567078}
 .board.running .cell.selected{background:rgba(225,240,237,.18);border-color:rgba(36,123,120,.18);box-shadow:none}
-.board.running .cell .target-letter{font-size:min(var(--target-size),25vw);color:var(--teal);text-shadow:0 1px 5px #fff}
-/* Move each visual target outward to increase gaze excursion. */
-.board.running .cell[data-pos="5"] .target-letter{transform:translate(-34%,-34%)}
-.board.running .cell[data-pos="1"] .target-letter{transform:translate(0,-34%)}
-.board.running .cell[data-pos="7"] .target-letter{transform:translate(34%,-34%)}
-.board.running .cell[data-pos="3"] .target-letter{transform:translate(-34%,0)}
-.board.running .cell[data-pos="0"] .target-letter{transform:translate(0,0)}
-.board.running .cell[data-pos="4"] .target-letter{transform:translate(34%,0)}
-.board.running .cell[data-pos="8"] .target-letter{transform:translate(-34%,34%)}
-.board.running .cell[data-pos="2"] .target-letter{transform:translate(0,34%)}
-.board.running .cell[data-pos="6"] .target-letter{transform:translate(34%,34%)}
+.board.running .cell .target-letter{color:var(--teal);text-shadow:0 1px 5px #fff}
+/* 視標は常に各マスの中央を基準に表示する */
 .run-overlay{display:none;position:fixed;z-index:25;top:calc(8px + env(safe-area-inset-top));left:10px;right:10px;align-items:center;justify-content:space-between;pointer-events:none}
 .run-overlay>*{pointer-events:auto}.run-overlay button{min-height:38px;padding:8px 13px;border-radius:20px;background:rgba(255,255,255,.88);border:1px solid #d6e2df;font-size:12px}
 .run-overlay .run-status{font-size:12px;font-weight:700;color:var(--ink);background:rgba(255,255,255,.82);padding:8px 12px;border-radius:20px}
@@ -76,18 +67,18 @@ footer{text-align:center;font-size:11px;color:#809095;margin-top:16px}
     <div class="small" style="margin-top:10px">スライダーを動かすと、視標サイズも連動してプレビューできます。最大サイズは最小サイズより大きく設定してください。</div>
   </section>
   <section class="card notice-card"><div class="small">※文字サイズの変化を利用した試作版です。文字サイズを変えること自体が眼の調節を必ず引き起こすわけではありません。痛み・複視・めまい・強い疲労が出たら中止してください。</div></section>
-  <footer class="app-footer">LiCo · Prototype 07</footer>
+  <footer class="app-footer">LiCo · Prototype 09</footer>
 </main>
 <div class="run-overlay"><span class="run-status" id="runStatus">トレーニング中</span><button id="exitRun">終了</button></div>
 <script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id);
 const cells=[...document.querySelectorAll('.cell')];
-let selected=new Set(['5','1','7','3','0','4','8','2','6']);
+let selected=new Set();
 let size=72,direction=1,phase='idle',cycles=0,raf=0,last=0,holdUntil=0,audioContext=null,sequence=[],seqIndex=0;
 const bounds=()=>{let min=Number($('min').value),max=Number($('max').value);if(max<=min){max=Math.min(220,min+1);$('max').value=max}return{min,max}};
 function activeCell(){return sequence[seqIndex]||'0'}
-function paint(){const {min,max}=bounds();size=Math.max(min,Math.min(max,size));document.documentElement.style.setProperty('--target-size',size+'px');$('detail').textContent=`文字サイズ ${Math.round(size)}px · ${cycles} / ${$('cycles').value} 往復 · 使用 ${selected.size} か所`;$('minOut').textContent=min+'px';$('maxOut').textContent=max+'px';cells.forEach(c=>{const id=c.dataset.pos;c.classList.toggle('selected',selected.has(id));c.querySelector('.target-letter').textContent=(phase==='running'||phase==='hold'||phase==='paused')&&id===activeCell()?$('symbol').value:'';});}
+function paint(){const {min,max}=bounds();size=Math.max(min,Math.min(max,size));document.documentElement.style.setProperty('--target-size',size+'px');$('detail').textContent=`文字サイズ ${Math.round(size)}px · ${cycles} / ${$('cycles').value} 往復 · 使用 ${selected.size} か所`;$('minOut').textContent=min+'px';$('maxOut').textContent=max+'px';cells.forEach(c=>{const id=c.dataset.pos;c.classList.toggle('selected',selected.has(id));c.querySelector('.target-letter').textContent=(phase==='running'||phase==='hold'||phase==='paused')?(id===activeCell() ? $('symbol').value : ''):(id==='0' ? $('symbol').value : '');});}
 function status(s){$('status').textContent=s;$('runStatus').textContent=s}
 function cancel(){cancelAnimationFrame(raf);raf=0;last=0}
 function setButtons(){const active=phase==='running'||phase==='hold';$('start').disabled=active||phase==='done';$('pause').disabled=!active;$('start').textContent=phase==='paused'?'再開':phase==='done'?'終了':'開始';$('pause').textContent='一時停止';$('min').disabled=active;$('max').disabled=active;}
