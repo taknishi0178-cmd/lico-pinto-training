@@ -1,5 +1,158 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>LiCo ピントトレーニング</title><style>
-:root{--ink:#173340;--teal:#247b78;--bg:#f3f6f5}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif}main{max-width:600px;margin:auto;padding:22px 16px 32px}.brand{font-size:12px;letter-spacing:.15em;color:var(--teal);font-weight:800}h1{font-size:24px;margin:5px 0 4px}.hint{font-size:12px;color:#64757d;line-height:1.6}.card{background:white;border-radius:18px;padding:16px;margin-top:14px;box-shadow:0 4px 18px #1539430a}.target{height:245px;display:grid;place-items:center;overflow:hidden;border-radius:13px;background:#f8fbfa}.letter{font-size:var(--size,72px);font-weight:750;line-height:1;transition:none;white-space:nowrap}.status{text-align:center;margin:12px 0 2px;font-size:15px;font-weight:700}.details{text-align:center;color:#687b82;font-size:12px;min-height:18px}.row{display:flex;gap:9px;flex-wrap:wrap}.row>*{flex:1}button,select,input{font:inherit;border:1px solid #dbe5e3;border-radius:11px;padding:12px;background:#f0f5f4;color:var(--ink);min-width:0}button{font-weight:700}button.primary{background:var(--teal);color:white;border-color:var(--teal)}button:disabled{opacity:.45}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}.tabs button.active{background:var(--teal);color:white}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#60737a}input[type=number]{width:100%}.small{font-size:12px;color:#60737a;line-height:1.6}.fine{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}footer{text-align:center;font-size:11px;color:#809095;margin-top:18px}
-</style></head><body><main><div class="brand">LiCo · LIFE COORDINATE</div><h1>ピントトレーニング</h1><div class="hint">画面を一定の距離に保ち、文字サイズの変化に合わせて見続けます。</div><section class="card"><div class="tabs"><button id="autoTab" class="active">オート</button><button id="manualTab">マニュアル</button></div><div class="target" aria-label="視標"><div id="letter" class="letter">A</div></div><div id="status" class="status" aria-live="polite">準備完了</div><div id="detail" class="details">文字サイズ 72px</div></section><section class="card" id="autoControls"><div class="row"><button class="primary" id="autoStart">開始</button><button id="autoPause" disabled>一時停止</button><button id="autoReset">リセット</button></div></section><section class="card" id="manualControls" hidden><div class="row"><button class="primary" id="grow">大きく</button><button id="stop">ストップ</button><button class="primary" id="shrink">小さく</button></div><div class="fine"><button id="minus">− 1px 微調整</button><button id="plus">＋ 1px 微調整</button></div></section><section class="card"><div class="grid"><label>最小サイズ（px）<input id="min" type="number" min="12" max="160" value="28"></label><label>最大サイズ（px）<input id="max" type="number" min="24" max="220" value="132"></label><label>変化速度<select id="speed"><option value="12">ゆっくり</option><option value="25" selected>標準</option><option value="45">速い</option></select></label><label>端での停止時間<select id="hold"><option value="1000">1秒</option><option value="2000" selected>2秒</option><option value="3000">3秒</option><option value="5000">5秒</option></select></label><label>往復回数<select id="cycles"><option value="1">1回</option><option value="3" selected>3回</option><option value="5">5回</option><option value="10">10回</option></select></label><label>視標<select id="symbol"><option>A</option><option>あ</option><option>＋</option><option>●</option></select></label></div></section><section class="card"><div class="small">※これは文字サイズの変化を利用した試作版です。文字サイズを変えること自体が眼の調節を必ず引き起こすわけではありません。痛み・複視・めまい・強い疲労が出たら中止してください。</div></section><footer>LiCo · Prototype 02</footer></main><script>
-(()=>{'use strict';const $=id=>document.getElementById(id);let mode='auto',size=72,direction=0,phase='idle',cycles=0,raf=0,last=0,holdUntil=0;const bounds=()=>{let min=Math.max(12,Math.min(160,Number($('min').value)||28));let max=Math.max(min+1,Math.min(220,Number($('max').value)||132));return{min,max}};const paint=()=>{$('letter').style.fontSize=size+'px';$('detail').textContent=`文字サイズ ${Math.round(size)}px · ${cycles} / ${$('cycles').value} 往復`};const status=s=>$('status').textContent=s;const buttons=()=>{$('autoStart').disabled=phase==='running'||phase==='hold';$('autoPause').disabled=!(phase==='running'||phase==='hold');$('autoStart').textContent=phase==='paused'?'再開':'開始'};function cancel(){cancelAnimationFrame(raf);raf=0;last=0}function reset(){cancel();phase='idle';direction=0;cycles=0;size=72;paint();status('準備完了');buttons()}function frame(t){if(phase!=='running'&&phase!=='hold')return;if(!last)last=t;let dt=Math.min((t-last)/1000,.1);last=t;const{min,max}=bounds();if(phase==='hold'){if(t>=holdUntil){phase='running';direction=direction===1?-1:1;status(direction===1?'大きくしています':'小さくしています')}raf=requestAnimationFrame(frame);return}size+=direction*Number($('speed').value)*dt;if(size>=max&&direction===1){size=max;phase='hold';holdUntil=t+Number($('hold').value);status('最大サイズでストップ')}else if(size<=min&&direction===-1){size=min;cycles++;if(cycles>=Number($('cycles').value)){paint();cancel();phase='done';status('終了しました');buttons();return}phase='hold';holdUntil=t+Number($('hold').value);status('最小サイズでストップ')}paint();raf=requestAnimationFrame(frame)}function autoStart(){if(phase==='running'||phase==='hold')return;if(phase!=='paused'){cycles=0;size=bounds().min;direction=1}phase='running';last=0;status(direction===1?'大きくしています':'小さくしています');buttons();raf=requestAnimationFrame(frame)}function setMode(m){cancel();mode=m;$('autoTab').classList.toggle('active',m==='auto');$('manualTab').classList.toggle('active',m==='manual');$('autoControls').hidden=m!=='auto';$('manualControls').hidden=m!=='manual';reset()}function manualStep(dir){cancel();phase='manual';direction=dir;status(dir===1?'大きくしています':'小さくしています');let prev=0;function step(t){if(phase!=='manual'||direction!==dir)return;if(!prev)prev=t;let dt=Math.min((t-prev)/1000,.1);prev=t;const{min,max}=bounds();size=Math.max(min,Math.min(max,size+dir*Number($('speed').value)*dt));paint();if(size===min||size===max){phase='idle';status('ストップ');return}raf=requestAnimationFrame(step)}raf=requestAnimationFrame(step)}$('autoTab').onclick=()=>setMode('auto');$('manualTab').onclick=()=>setMode('manual');$('autoStart').onclick=autoStart;$('autoPause').onclick=()=>{if(phase==='running'||phase==='hold'){cancel();phase='paused';status('一時停止中');buttons()}};$('autoReset').onclick=reset;$('grow').onclick=()=>manualStep(1);$('shrink').onclick=()=>manualStep(-1);$('stop').onclick=()=>{cancel();phase='idle';status('ストップ')};$('minus').onclick=()=>{cancel();phase='idle';size=Math.max(bounds().min,size-1);paint();status('微調整')};$('plus').onclick=()=>{cancel();phase='idle';size=Math.min(bounds().max,size+1);paint();status('微調整')};$('symbol').onchange=()=>{$('letter').textContent=$('symbol').value};['min','max'].forEach(id=>$(id).onchange=()=>{const{min,max}=bounds();size=Math.max(min,Math.min(max,size));paint()});paint();buttons()})();
-</script></body></html>
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f3f6f5">
+<title>LiCo ピントトレーニング</title>
+<style>
+:root{--ink:#173340;--teal:#247b78;--bg:#f3f6f5;--muted:#65777d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif}
+main{max-width:600px;margin:auto;padding:20px 16px 34px}
+.brand{font-size:12px;letter-spacing:.15em;color:var(--teal);font-weight:800}
+h1{font-size:23px;margin:5px 0}.hint{font-size:12px;color:var(--muted);line-height:1.6}
+.card{background:#fff;border-radius:18px;padding:16px;margin-top:13px;box-shadow:0 4px 18px #1539430a}
+.target{height:230px;width:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:13px;background:#f8fbfa;contain:layout paint}
+.letter{font-size:72px;font-weight:750;line-height:1;white-space:nowrap;flex:none}
+.status{text-align:center;margin:12px 0 2px;font-size:15px;font-weight:700;min-height:22px}
+.details{text-align:center;color:var(--muted);font-size:12px;min-height:18px}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+button,select{font:inherit;border:1px solid #dbe5e3;border-radius:11px;padding:13px;background:#f0f5f4;color:var(--ink);min-width:0}
+button{font-weight:700;min-height:48px;touch-action:manipulation}
+button.primary{background:var(--teal);color:white;border-color:var(--teal)}
+button:disabled{opacity:.45}
+.setting{margin-top:14px}
+.setting-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:650}
+.setting-head output{color:var(--teal);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;padding:0;margin:12px 0 0;accent-color:var(--teal);border:0;background:transparent}
+.range-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
+label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)}
+select{padding:10px}
+.small{font-size:12px;color:var(--muted);line-height:1.65}
+footer{text-align:center;font-size:11px;color:#809095;margin-top:18px}
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">LiCo · LIFE COORDINATE</div>
+  <h1>ピントトレーニング</h1>
+  <div class="hint">画面を一定の距離に保ち、文字サイズの変化に合わせて見続けます。</div>
+
+  <section class="card">
+    <div class="target"><div id="letter" class="letter">A</div></div>
+    <div id="status" class="status" aria-live="polite">準備完了</div>
+    <div id="detail" class="details">文字サイズ 72px</div>
+  </section>
+
+  <section class="card">
+    <div class="controls">
+      <button class="primary" id="start">開始</button>
+      <button id="pause" disabled>一時停止</button>
+      <button id="reset" style="grid-column:1/-1">リセット</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="setting">
+      <div class="setting-head"><span>最小文字サイズ</span><output id="minOut">28px</output></div>
+      <input id="min" type="range" min="12" max="120" value="28">
+      <div class="range-labels"><span>小さい</span><span>大きい</span></div>
+    </div>
+    <div class="setting">
+      <div class="setting-head"><span>最大文字サイズ</span><output id="maxOut">132px</output></div>
+      <input id="max" type="range" min="40" max="220" value="132">
+      <div class="range-labels"><span>小さい</span><span>大きい</span></div>
+    </div>
+    <div class="grid">
+      <label>変化速度<select id="speed"><option value="12">ゆっくり</option><option value="25" selected>標準</option><option value="45">速い</option></select></label>
+      <label>端での停止時間<select id="hold"><option value="1000">1秒</option><option value="2000" selected>2秒</option><option value="3000">3秒</option><option value="5000">5秒</option></select></label>
+      <label>往復回数<select id="cycles"><option value="1">1回</option><option value="3" selected>3回</option><option value="5">5回</option><option value="10">10回</option></select></label>
+      <label>視標<select id="symbol"><option>A</option><option>あ</option><option>＋</option><option>●</option></select></label>
+    </div>
+    <div class="small" style="margin-top:14px">スライダーで文字サイズの範囲を設定できます。最大サイズは最小サイズより大きく設定してください。</div>
+  </section>
+
+  <section class="card">
+    <div class="small">※文字サイズの変化を利用した試作版です。文字サイズを変えること自体が眼の調節を必ず引き起こすわけではありません。痛み・複視・めまい・強い疲労が出たら中止してください。</div>
+  </section>
+  <footer>LiCo · Prototype 04</footer>
+</main>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+let size=72,direction=1,phase='idle',cycles=0,raf=0,last=0,holdUntil=0;
+const bounds=()=>{
+  let min=Number($('min').value),max=Number($('max').value);
+  if(max<=min){max=Math.min(220,min+1);$('max').value=max}
+  return {min,max};
+};
+function paint(){
+  const {min,max}=bounds();
+  size=Math.max(min,Math.min(max,size));
+  $('letter').style.fontSize=size+'px';
+  $('detail').textContent=`文字サイズ ${Math.round(size)}px · ${cycles} / ${$('cycles').value} 往復`;
+  $('minOut').textContent=min+'px';$('maxOut').textContent=max+'px';
+}
+function status(s){$('status').textContent=s}
+function cancel(){cancelAnimationFrame(raf);raf=0;last=0}
+function setButtons(){
+  const active=phase==='running'||phase==='hold';
+  $('start').disabled=active||phase==='done';
+  $('pause').disabled=!active;
+  $('start').textContent=phase==='paused'?'再開':phase==='done'?'終了':'開始';
+}
+function reset(){
+  cancel();phase='idle';direction=1;cycles=0;size=bounds().min;
+  paint();status('準備完了');setButtons();
+}
+function frame(t){
+  if(phase!=='running'&&phase!=='hold')return;
+  if(!last)last=t;
+  const dt=Math.min((t-last)/1000,.1);last=t;
+  const {min,max}=bounds();
+  if(phase==='hold'){
+    if(t>=holdUntil){
+      phase='running';direction=direction===1?-1:1;
+      status(direction===1?'大きくしています':'小さくしています');
+    }
+    raf=requestAnimationFrame(frame);return;
+  }
+  size+=direction*Number($('speed').value)*dt;
+  if(size>=max&&direction===1){
+    size=max;phase='hold';holdUntil=t+Number($('hold').value);status('最大サイズでストップ');
+  }else if(size<=min&&direction===-1){
+    size=min;cycles++;
+    if(cycles>=Number($('cycles').value)){
+      paint();cancel();phase='done';status('トレーニング終了');setButtons();return;
+    }
+    phase='hold';holdUntil=t+Number($('hold').value);status('最小サイズでストップ');
+  }
+  paint();raf=requestAnimationFrame(frame);
+}
+function start(){
+  if(phase==='running'||phase==='hold'||phase==='done')return;
+  if(phase!=='paused'){cycles=0;size=bounds().min;direction=1}
+  phase='running';last=0;status('大きくしています');setButtons();raf=requestAnimationFrame(frame);
+}
+function pause(){
+  if(phase!=='running'&&phase!=='hold')return;
+  cancel();phase='paused';status('一時停止中');setButtons();
+}
+$('start').onclick=start;$('pause').onclick=pause;$('reset').onclick=reset;
+$('symbol').onchange=()=>$('letter').textContent=$('symbol').value;
+$('min').oninput=()=>{
+  const min=Number($('min').value);
+  if(Number($('max').value)<=min)$('max').value=Math.min(220,min+1);
+  paint();
+};
+$('max').oninput=()=>{
+  const max=Number($('max').value);
+  if(max<=Number($('min').value))$('min').value=Math.max(12,max-1);
+  paint();
+};
+paint();reset();
+})();
+</script>
+</body></html>
