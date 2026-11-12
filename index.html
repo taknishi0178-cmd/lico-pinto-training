@@ -13,7 +13,7 @@ body{overscroll-behavior:none}main{max-width:600px;margin:auto;padding:calc(14px
 .card{background:#fff;border-radius:18px;padding:14px;margin-top:12px;box-shadow:0 4px 18px #1539430a}
 .board{width:100%;height:min(62svh,560px);min-height:300px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:5px;padding:5px;border-radius:15px;background:#e7efed;touch-action:manipulation}
 .cell{position:relative;display:grid;place-items:center;min-width:0;min-height:0;border:1px solid #d7e3e0;border-radius:10px;background:#fbfdfc;color:var(--ink);padding:0;overflow:hidden}
-.cell-number{font-size:clamp(30px,9vw,58px);font-weight:750;line-height:1;color:#567078;transition:opacity .2s}
+.cell-number{font-size:clamp(30px,9vw,58px);font-weight:750;line-height:1;color:#567078;opacity:.10;transition:opacity .2s}
 .cell.selected{background:#e1f0ed;border:2px solid var(--teal);box-shadow:inset 0 0 0 1px #fff}
 .cell.selected .cell-number{color:var(--teal)}
 .cell .target-letter{position:absolute;inset:0;display:grid;place-items:center;font-size:var(--target-size);font-weight:800;line-height:1;white-space:nowrap;color:var(--teal);pointer-events:none}
@@ -67,7 +67,7 @@ footer{text-align:center;font-size:11px;color:#809095;margin-top:16px}
     <div class="small" style="margin-top:10px">スライダーを動かすと、視標サイズも連動してプレビューできます。最大サイズは最小サイズより大きく設定してください。</div>
   </section>
   <section class="card notice-card"><div class="small">※文字サイズの変化を利用した試作版です。文字サイズを変えること自体が眼の調節を必ず引き起こすわけではありません。痛み・複視・めまい・強い疲労が出たら中止してください。</div></section>
-  <footer class="app-footer">LiCo · Prototype 09</footer>
+  <footer class="app-footer">LiCo · Prototype 10</footer>
 </main>
 <div class="run-overlay"><span class="run-status" id="runStatus">トレーニング中</span><button id="exitRun">終了</button></div>
 <script>
