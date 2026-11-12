@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#172b3a">
+<title>LiCo ピントトレーニング</title>
+<style>
+:root{--bg:#f3f5f4;--ink:#172b3a;--accent:#287b78;--muted:#718087;--card:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif}
+main{max-width:620px;margin:auto;min-height:100svh;padding:20px 18px 30px;display:flex;flex-direction:column;gap:16px}
+header{display:flex;justify-content:space-between;align-items:center}
+.brand{font-size:13px;letter-spacing:.14em;font-weight:700;color:var(--accent)}
+h1{font-size:23px;margin:2px 0 0}
+.sub{font-size:13px;color:var(--muted);margin:5px 0 0}
+.panel{background:var(--card);border-radius:20px;padding:18px;box-shadow:0 5px 22px #1c33400c}
+.stage{display:flex;flex-direction:column;align-items:center;gap:12px}
+#direction{font-size:clamp(68px,20vw,112px);font-weight:750;line-height:1.1;letter-spacing:.04em;color:var(--accent);min-height:120px;display:grid;place-items:center}
+#cue{font-size:25px;font-weight:700;text-align:center;min-height:36px}
+#detail{font-size:14px;color:var(--muted);text-align:center;min-height:22px}
+.progress{height:7px;background:#e8eeee;border-radius:20px;overflow:hidden;width:100%}
+#bar{height:100%;width:0;background:var(--accent);transition:width .25s}
+.stats{display:flex;justify-content:space-between;width:100%;font-size:12px;color:var(--muted)}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button,select{font:inherit;border:0;border-radius:13px;padding:14px;background:#e9efee;color:var(--ink)}
+button.primary{background:var(--accent);color:white;font-weight:700}
+button:disabled{opacity:.4}
+.settings{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)}
+select{padding:11px;background:#f0f4f3}
+.note{font-size:12px;line-height:1.6;color:var(--muted)}
+.row{display:flex;gap:8px;align-items:center}
+.row input{accent-color:var(--accent)}
+footer{text-align:center;font-size:11px;color:#879397;margin-top:auto}
+@media(min-width:520px){main{padding-top:28px}}
+</style>
+</head>
+<body>
+<main>
+<header><div><div class="brand">LiCo · LIFE COORDINATE</div><h1>ピントトレーニング</h1><p class="sub">音声ガイドに合わせて、スマートフォンをゆっくり動かします</p></div></header>
+<section class="panel stage" aria-live="polite">
+  <div class="stats"><span id="round">準備</span><span id="count">0 / 8</span></div>
+  <div id="direction">A</div>
+  <div id="cue">準備ができたら開始</div>
+  <div id="detail">画面の文字を見ながら、スマホを動かします</div>
+  <div class="progress"><div id="bar"></div></div>
+  <div class="stats"><span id="phase">待機中</span><span id="timer">--</span></div>
+</section>
+<section class="panel">
+  <div class="controls">
+    <button class="primary" id="start">開始</button>
+    <button id="pause" disabled>一時停止</button>
+    <button id="next" disabled>次へ</button>
+    <button id="reset">リセット</button>
+  </div>
+</section>
+<section class="panel">
+  <div class="settings">
+    <label>実施モード<select id="mode"><option value="両眼">両眼</option><option value="右眼">右眼</option><option value="左眼">左眼</option></select></label>
+    <label>方向の順番<select id="order"><option value="standard">標準（上→右上→右…）</option><option value="random">ランダム</option></select></label>
+    <label>近づける時間<select id="near"><option value="4">4秒</option><option value="6" selected>6秒</option><option value="8">8秒</option></select></label>
+    <label>離す時間<select id="far"><option value="4">4秒</option><option value="6" selected>6秒</option><option value="8">8秒</option></select></label>
+    <label>方向ごとの回数<select id="reps"><option value="1">1回</option><option value="2" selected>2回</option><option value="3">3回</option></select></label>
+    <label>音声<select id="voice"><option value="on">音声あり</option><option value="off">音声なし</option></select></label>
+  </div>
+</section>
+<section class="panel">
+  <div class="row"><input type="checkbox" id="beep" checked><label for="beep" style="display:block">合図の前に短いカウントを入れる</label></div>
+  <p class="note">※痛み・めまい・複視・強い眼精疲労が出たら中止してください。無理にピントが合う限界まで近づけず、楽に見える範囲で行います。眼鏡・コンタクトの使用や片眼遮蔽は、必要に応じて専門家の指示に従ってください。</p>
+</section>
+<footer>Prototype 01 · LiCo</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const dirs=[{c:"A",n:"上"},{c:"B",n:"右上"},{c:"C",n:"右"},{c:"D",n:"右下"},{c:"E",n:"下"},{c:"F",n:"左下"},{c:"G",n:"左"},{c:"H",n:"左上"}];
+let sequence=[],idx=0,rep=0,phaseIndex=0,running=false,paused=false,timeout=null,interval=null,remaining=0,phaseDuration=0,phaseStart=0;
+const phases=[
+ {key:"near",cue:"近づけて",detail:"文字を見続けながら、ゆっくり顔に近づけます"},
+ {key:"hold",cue:"その位置でキープ",detail:"無理のない範囲で、文字を見続けます",duration:2},
+ {key:"far",cue:"離して",detail:"文字を見続けながら、ゆっくり遠ざけます"}
+];
+function speak(t){if($("voice").value==="off"||!("speechSynthesis"in window))return;speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(t);u.lang="ja-JP";u.rate=0.92;u.pitch=1;speechSynthesis.speak(u)}
+function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+function update(){
+ $("direction").textContent=sequence[idx]?.c||"✓";
+ $("round").textContent=running||paused?`${$("mode").value} · 方向 ${idx+1} / 8`:"準備";
+ $("count").textContent=`${Math.min(idx+1,8)} / 8`;
+ $("bar").style.width=`${((idx*Number($("reps").value)+rep)/(8*Number($("reps").value)))*100}%`;
+}
+function stopClocks(){clearTimeout(timeout);clearInterval(interval);timeout=interval=null}
+function showPhase(){
+ if(idx>=8){finish();return}
+ const p=phases[phaseIndex];let dur=p.duration??Number($(p.key).value);
+ phaseDuration=dur;remaining=dur;phaseStart=Date.now();
+ $("cue").textContent=p.cue;$("detail").textContent=p.detail;$("phase").textContent=p.cue;$("timer").textContent=`${dur}秒`;
+ speak(p.cue);update();
+ if($("beep").checked){/* visual countdown is sufficient; speech remains uncluttered */}
+ interval=setInterval(()=>{
+   if(!running)return;
+   remaining=Math.max(0,(phaseDuration-(Date.now()-phaseStart)/1000));
+   $("timer").textContent=`${remaining.toFixed(1)}秒`;
+ },100);
+ timeout=setTimeout(()=>{
+   stopClocks();
+   if(phaseIndex<2){phaseIndex++;showPhase()}
+   else {phaseIndex=0;rep++;if(rep>=Number($("reps").value)){rep=0;idx++}if(idx>=8)finish();else showPhase()}
+ },dur*1000);
+}
+function start(){
+ if(running)return;
+ if(sequence.length===0){sequence=$("order").value==="random"?shuffle(dirs):[...dirs];idx=0;rep=0;phaseIndex=0}
+ running=true;paused=false;$("start").disabled=true;$("pause").disabled=false;$("next").disabled=false;$("start").textContent="実施中";showPhase()
+}
+function pause(){
+ if(!running)return;running=false;paused=true;stopClocks();speechSynthesis?.cancel();
+ $("cue").textContent="一時停止中";$("detail").textContent="再開すると同じ段階から続きます";$("start").disabled=false;$("start").textContent="再開";$("pause").disabled=true;
+}
+function finish(){
+ running=false;paused=false;stopClocks();speechSynthesis?.cancel();
+ $("direction").textContent="完了";$("cue").textContent="お疲れさまでした";$("detail").textContent="トレーニングを終了しました";$("phase").textContent="終了";$("timer").textContent="";$("bar").style.width="100%";
+ $("start").disabled=true;$("pause").disabled=true;$("next").disabled=true;speak("お疲れさまでした。トレーニング終了です。");
+}
+function reset(){
+ stopClocks();if("speechSynthesis"in window)speechSynthesis.cancel();running=false;paused=false;sequence=[];idx=0;rep=0;phaseIndex=0;
+ $("direction").textContent="A";$("cue").textContent="準備ができたら開始";$("detail").textContent="画面の文字を見ながら、スマホを動かします";$("phase").textContent="待機中";$("timer").textContent="--";$("bar").style.width="0%";
+ $("start").disabled=false;$("start").textContent="開始";$("pause").disabled=true;$("next").disabled=true;update()
+}
+$("start").onclick=start;$("pause").onclick=pause;$("reset").onclick=reset;
+$("next").onclick=()=>{if(!running&&!paused)return;stopClocks();phaseIndex++;if(phaseIndex>2){phaseIndex=0;rep++;if(rep>=Number($("reps").value)){rep=0;idx++}}if(idx>=8)finish();else{running=true;showPhase()}};
+$("order").onchange=reset;$("mode").onchange=reset;
+update();
+</script>
+</body></html>
