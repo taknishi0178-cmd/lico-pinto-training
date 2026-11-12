@@ -6,177 +6,107 @@
 <meta name="theme-color" content="#f3f6f5">
 <title>LiCo ピントトレーニング</title>
 <style>
-:root{--ink:#173340;--teal:#247b78;--bg:#f3f6f5;--muted:#65777d}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif}
-main{max-width:600px;margin:auto;padding:20px 16px 34px}
-.brand{font-size:12px;letter-spacing:.15em;color:var(--teal);font-weight:800}
-h1{font-size:23px;margin:5px 0}.hint{font-size:12px;color:var(--muted);line-height:1.6}
-.card{background:#fff;border-radius:18px;padding:16px;margin-top:13px;box-shadow:0 4px 18px #1539430a}
-.target{height:230px;width:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:13px;background:#f8fbfa;contain:layout paint}
-.letter{font-size:72px;font-weight:750;line-height:1;white-space:nowrap;flex:none}
-.status{text-align:center;margin:12px 0 2px;font-size:15px;font-weight:700;min-height:22px}
-.details{text-align:center;color:var(--muted);font-size:12px;min-height:18px}
-.controls{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-button,select{font:inherit;border:1px solid #dbe5e3;border-radius:11px;padding:13px;background:#f0f5f4;color:var(--ink);min-width:0}
-button{font-weight:700;min-height:48px;touch-action:manipulation}
-button.primary{background:var(--teal);color:white;border-color:var(--teal)}
-button:disabled{opacity:.45}
-.setting{margin-top:14px}
-.setting-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:650}
-.setting-head output{color:var(--teal);font-variant-numeric:tabular-nums}
-input[type=range]{width:100%;padding:0;margin:12px 0 0;accent-color:var(--teal);border:0;background:transparent}
-.range-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
-label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)}
-select{padding:10px}
-.small{font-size:12px;color:var(--muted);line-height:1.65}
-.sound-setting{display:flex;flex-direction:row;align-items:center;gap:8px;margin-top:14px;color:var(--ink);font-size:13px}
-.sound-setting input{width:18px;height:18px;accent-color:var(--teal)}
-footer{text-align:center;font-size:11px;color:#809095;margin-top:18px}
+:root{--ink:#173340;--teal:#247b78;--bg:#f3f6f5;--muted:#65777d;--target-size:72px}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif}
+body{overscroll-behavior:none}main{max-width:600px;margin:auto;padding:calc(14px + env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom))}
+.brand{font-size:12px;letter-spacing:.15em;color:var(--teal);font-weight:800}h1{font-size:22px;margin:4px 0}.hint{font-size:12px;color:var(--muted);line-height:1.5}
+.card{background:#fff;border-radius:18px;padding:14px;margin-top:12px;box-shadow:0 4px 18px #1539430a}
+.board{width:100%;height:min(62svh,560px);min-height:300px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:5px;padding:5px;border-radius:15px;background:#e7efed;touch-action:manipulation}
+.cell{position:relative;display:grid;place-items:center;min-width:0;min-height:0;border:1px solid #d7e3e0;border-radius:10px;background:#fbfdfc;color:var(--ink);padding:0;overflow:hidden}
+.cell-number{font-size:clamp(30px,9vw,58px);font-weight:750;line-height:1;color:#567078;transition:opacity .2s}
+.cell.selected{background:#e1f0ed;border:2px solid var(--teal);box-shadow:inset 0 0 0 1px #fff}
+.cell.selected .cell-number{color:var(--teal)}
+.cell .target-letter{position:absolute;inset:0;display:grid;place-items:center;font-size:var(--target-size);font-weight:800;line-height:1;white-space:nowrap;color:var(--teal);pointer-events:none}
+.board.running{position:fixed;z-index:20;inset:0;width:100vw;height:100vh;height:100dvh;max-width:none;min-height:0;border-radius:0;padding:calc(7px + env(safe-area-inset-top)) 7px calc(7px + env(safe-area-inset-bottom));gap:4px;background:#f5f8f7}
+.board.running .cell{border-radius:5px;border-color:#dfe8e5;background:rgba(255,255,255,.34)}
+.board.running .cell-number{font-size:clamp(42px,14vw,100px);opacity:.15;color:#567078}
+.board.running .cell.selected{background:rgba(225,240,237,.18);border-color:rgba(36,123,120,.18);box-shadow:none}
+.board.running .cell .target-letter{font-size:min(var(--target-size),25vw);color:var(--teal);text-shadow:0 1px 5px #fff}
+/* Move each visual target outward to increase gaze excursion. */
+.board.running .cell[data-pos="5"] .target-letter{transform:translate(-34%,-34%)}
+.board.running .cell[data-pos="1"] .target-letter{transform:translate(0,-34%)}
+.board.running .cell[data-pos="7"] .target-letter{transform:translate(34%,-34%)}
+.board.running .cell[data-pos="3"] .target-letter{transform:translate(-34%,0)}
+.board.running .cell[data-pos="0"] .target-letter{transform:translate(0,0)}
+.board.running .cell[data-pos="4"] .target-letter{transform:translate(34%,0)}
+.board.running .cell[data-pos="8"] .target-letter{transform:translate(-34%,34%)}
+.board.running .cell[data-pos="2"] .target-letter{transform:translate(0,34%)}
+.board.running .cell[data-pos="6"] .target-letter{transform:translate(34%,34%)}
+.run-overlay{display:none;position:fixed;z-index:25;top:calc(8px + env(safe-area-inset-top));left:10px;right:10px;align-items:center;justify-content:space-between;pointer-events:none}
+.run-overlay>*{pointer-events:auto}.run-overlay button{min-height:38px;padding:8px 13px;border-radius:20px;background:rgba(255,255,255,.88);border:1px solid #d6e2df;font-size:12px}
+.run-overlay .run-status{font-size:12px;font-weight:700;color:var(--ink);background:rgba(255,255,255,.82);padding:8px 12px;border-radius:20px}
+body.is-running{overflow:hidden}.is-running main{padding:0;max-width:none}.is-running .app-header,.is-running .settings-card,.is-running .notice-card,.is-running .control-card,.is-running .board-card{display:none}.is-running .board-card{display:block;position:fixed;inset:0;margin:0;padding:0;border-radius:0;box-shadow:none;background:transparent;z-index:19}.is-running .board{display:grid}.is-running .run-overlay{display:flex}
+.status{text-align:center;margin:10px 0 2px;font-size:14px;font-weight:700;min-height:20px}.details{text-align:center;color:var(--muted);font-size:12px;min-height:18px}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:9px}button,select{font:inherit;border:1px solid #dbe5e3;border-radius:11px;padding:12px;background:#f0f5f4;color:var(--ink);min-width:0}button{font-weight:700;min-height:46px;touch-action:manipulation}button.primary{background:var(--teal);color:white;border-color:var(--teal)}button:disabled{opacity:.45}
+.setting{margin-top:12px}.setting-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:650}.setting-head output{color:var(--teal);font-variant-numeric:tabular-nums}input[type=range]{width:100%;padding:0;margin:10px 0 0;accent-color:var(--teal);border:0;background:transparent}.range-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:14px}label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)}select{padding:10px}.small{font-size:12px;color:var(--muted);line-height:1.65}.sound-setting{display:flex;flex-direction:row;align-items:center;gap:8px;margin-top:13px;color:var(--ink);font-size:13px}.sound-setting input{width:18px;height:18px;accent-color:var(--teal)}
+footer{text-align:center;font-size:11px;color:#809095;margin-top:16px}
+@media(min-width:700px){main{max-width:680px}.board{height:min(65svh,620px)}}
 </style>
 </head>
 <body>
 <main>
-  <div class="brand">LiCo · LIFE COORDINATE</div>
-  <h1>ピントトレーニング</h1>
-  <div class="hint">画面を一定の距離に保ち、文字サイズの変化に合わせて見続けます。</div>
-
-  <section class="card">
-    <div class="target"><div id="letter" class="letter">A</div></div>
-    <div id="status" class="status" aria-live="polite">準備完了</div>
-    <div id="detail" class="details">文字サイズ 72px</div>
+  <header class="app-header"><div class="brand">LiCo · LIFE COORDINATE</div><h1>ピントトレーニング</h1><div class="hint">使用する位置をタッチして選択してください。選択した位置に視標が表示されます。</div></header>
+  <section class="card board-card">
+    <div id="board" class="board" aria-label="9方向の視標選択画面">
+      <button class="cell" data-pos="5" aria-label="左上 5"><span class="cell-number">5</span><span class="target-letter"></span></button>
+      <button class="cell" data-pos="1" aria-label="上 1"><span class="cell-number">1</span><span class="target-letter"></span></button>
+      <button class="cell" data-pos="7" aria-label="右上 7"><span class="cell-number">7</span><span class="target-letter"></span></button>
+      <button class="cell" data-pos="3" aria-label="左 3"><span class="cell-number">3</span><span class="target-letter"></span></button>
+      <button class="cell" data-pos="0" aria-label="中心 0"><span class="cell-number">0</span><span class="target-letter"></span></button>
+      <button class="cell" data-pos="4" aria-label="右 4"><span class="cell-number">4</span><span class="target-letter"></span></button>
+      <button class="cell" data-pos="8" aria-label="左下 8"><span class="cell-number">8</span><span class="target-letter"></span></button>
+      <button class="cell" data-pos="2" aria-label="下 2"><span class="cell-number">2</span><span class="target-letter"></span></button>
+      <button class="cell" data-pos="6" aria-label="右下 6"><span class="cell-number">6</span><span class="target-letter"></span></button>
+    </div>
+    <div id="status" class="status" aria-live="polite">使用する位置を選択してください</div>
+    <div id="detail" class="details">選択中：9 / 9 か所</div>
   </section>
-
-  <section class="card">
-    <div class="controls">
-      <button class="primary" id="start">開始</button>
-      <button id="pause" disabled>一時停止</button>
-      <button id="reset" style="grid-column:1/-1">リセット</button>
-    </div>
-  </section>
-
-  <section class="card">
-    <div class="setting">
-      <div class="setting-head"><span>最小文字サイズ</span><output id="minOut">28px</output></div>
-      <input id="min" type="range" min="12" max="120" value="28">
-      <div class="range-labels"><span>小さい</span><span>大きい</span></div>
-    </div>
-    <div class="setting">
-      <div class="setting-head"><span>最大文字サイズ</span><output id="maxOut">132px</output></div>
-      <input id="max" type="range" min="40" max="220" value="132">
-      <div class="range-labels"><span>小さい</span><span>大きい</span></div>
-    </div>
-    <div class="grid">
+  <section class="card control-card"><div class="controls"><button class="primary" id="start">開始</button><button id="pause" disabled>一時停止</button><button id="reset" style="grid-column:1/-1">リセット</button></div></section>
+  <section class="card settings-card">
+    <div class="setting"><div class="setting-head"><span>最小文字サイズ</span><output id="minOut">28px</output></div><input id="min" type="range" min="12" max="120" value="28"><div class="range-labels"><span>小さい</span><span>大きい</span></div></div>
+    <div class="setting"><div class="setting-head"><span>最大文字サイズ</span><output id="maxOut">132px</output></div><input id="max" type="range" min="40" max="220" value="132"><div class="range-labels"><span>小さい</span><span>大きい</span></div></div>
+    <div class="settings-grid">
       <label>変化速度<select id="speed"><option value="12">ゆっくり</option><option value="25" selected>標準</option><option value="45">速い</option></select></label>
       <label>端での停止時間<select id="hold"><option value="1000">1秒</option><option value="2000" selected>2秒</option><option value="3000">3秒</option><option value="5000">5秒</option></select></label>
       <label>往復回数<select id="cycles"><option value="1">1回</option><option value="3" selected>3回</option><option value="5">5回</option><option value="10">10回</option></select></label>
       <label>視標<select id="symbol"><option>A</option><option>あ</option><option>＋</option><option>●</option></select></label>
     </div>
     <label class="sound-setting"><input id="sound" type="checkbox" checked>切り替わるときに電子音を鳴らす</label>
-    <div class="small" style="margin-top:10px">スライダーを動かすと、上の文字サイズも連動してプレビューできます。最大サイズは最小サイズより大きく設定してください。</div>
+    <div class="small" style="margin-top:10px">スライダーを動かすと、視標サイズも連動してプレビューできます。最大サイズは最小サイズより大きく設定してください。</div>
   </section>
-
-  <section class="card">
-    <div class="small">※文字サイズの変化を利用した試作版です。文字サイズを変えること自体が眼の調節を必ず引き起こすわけではありません。痛み・複視・めまい・強い疲労が出たら中止してください。</div>
-  </section>
-  <footer>LiCo · Prototype 05</footer>
+  <section class="card notice-card"><div class="small">※文字サイズの変化を利用した試作版です。文字サイズを変えること自体が眼の調節を必ず引き起こすわけではありません。痛み・複視・めまい・強い疲労が出たら中止してください。</div></section>
+  <footer class="app-footer">LiCo · Prototype 07</footer>
 </main>
+<div class="run-overlay"><span class="run-status" id="runStatus">トレーニング中</span><button id="exitRun">終了</button></div>
 <script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id);
-let size=72,direction=1,phase='idle',cycles=0,raf=0,last=0,holdUntil=0,audioContext=null;
-const bounds=()=>{
-  let min=Number($('min').value),max=Number($('max').value);
-  if(max<=min){max=Math.min(220,min+1);$('max').value=max}
-  return {min,max};
-};
-function paint(){
-  const {min,max}=bounds();
-  size=Math.max(min,Math.min(max,size));
-  $('letter').style.fontSize=size+'px';
-  $('detail').textContent=`文字サイズ ${Math.round(size)}px · ${cycles} / ${$('cycles').value} 往復`;
-  $('minOut').textContent=min+'px';$('maxOut').textContent=max+'px';
-}
-function status(s){$('status').textContent=s}
+const cells=[...document.querySelectorAll('.cell')];
+let selected=new Set(['5','1','7','3','0','4','8','2','6']);
+let size=72,direction=1,phase='idle',cycles=0,raf=0,last=0,holdUntil=0,audioContext=null,sequence=[],seqIndex=0;
+const bounds=()=>{let min=Number($('min').value),max=Number($('max').value);if(max<=min){max=Math.min(220,min+1);$('max').value=max}return{min,max}};
+function activeCell(){return sequence[seqIndex]||'0'}
+function paint(){const {min,max}=bounds();size=Math.max(min,Math.min(max,size));document.documentElement.style.setProperty('--target-size',size+'px');$('detail').textContent=`文字サイズ ${Math.round(size)}px · ${cycles} / ${$('cycles').value} 往復 · 使用 ${selected.size} か所`;$('minOut').textContent=min+'px';$('maxOut').textContent=max+'px';cells.forEach(c=>{const id=c.dataset.pos;c.classList.toggle('selected',selected.has(id));c.querySelector('.target-letter').textContent=(phase==='running'||phase==='hold'||phase==='paused')&&id===activeCell()?$('symbol').value:'';});}
+function status(s){$('status').textContent=s;$('runStatus').textContent=s}
 function cancel(){cancelAnimationFrame(raf);raf=0;last=0}
-function setButtons(){
-  const active=phase==='running'||phase==='hold';
-  $('start').disabled=active||phase==='done';
-  $('pause').disabled=!active;
-  $('start').textContent=phase==='paused'?'再開':phase==='done'?'終了':'開始';
-  $('min').disabled=active;$('max').disabled=active;
-}
-function prepareAudio(){
-  if(!$('sound').checked)return;
-  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
-  if(!AudioContextClass)return;
-  if(!audioContext)audioContext=new AudioContextClass();
-  if(audioContext.state==='suspended')audioContext.resume();
-}
-function beep(){
-  if(!$('sound').checked||!audioContext||audioContext.state!=='running')return;
-  const now=audioContext.currentTime;
-  const oscillator=audioContext.createOscillator();
-  const gain=audioContext.createGain();
-  oscillator.type='sine';oscillator.frequency.setValueAtTime(880,now);
-  gain.gain.setValueAtTime(0.0001,now);
-  gain.gain.exponentialRampToValueAtTime(0.16,now+0.008);
-  gain.gain.exponentialRampToValueAtTime(0.0001,now+0.105);
-  oscillator.connect(gain);gain.connect(audioContext.destination);
-  oscillator.start(now);oscillator.stop(now+0.11);
-}
-function reset(){
-  cancel();phase='idle';direction=1;cycles=0;size=bounds().min;
-  paint();status('準備完了');setButtons();
-}
-function frame(t){
-  if(phase!=='running'&&phase!=='hold')return;
-  if(!last)last=t;
-  const dt=Math.min((t-last)/1000,.1);last=t;
-  const {min,max}=bounds();
-  if(phase==='hold'){
-    if(t>=holdUntil){
-      phase='running';direction=direction===1?-1:1;
-      status(direction===1?'大きくしています':'小さくしています');
-      beep();
-    }
-    raf=requestAnimationFrame(frame);return;
-  }
-  size+=direction*Number($('speed').value)*dt;
-  if(size>=max&&direction===1){
-    size=max;phase='hold';holdUntil=t+Number($('hold').value);status('最大サイズでストップ');
-  }else if(size<=min&&direction===-1){
-    size=min;cycles++;
-    if(cycles>=Number($('cycles').value)){
-      paint();cancel();phase='done';status('トレーニング終了');setButtons();return;
-    }
-    phase='hold';holdUntil=t+Number($('hold').value);status('最小サイズでストップ');
-  }
-  paint();raf=requestAnimationFrame(frame);
-}
-function start(){
-  if(phase==='running'||phase==='hold'||phase==='done')return;
-  prepareAudio();
-  if(phase!=='paused'){cycles=0;size=bounds().min;direction=1}
-  phase='running';last=0;status('大きくしています');setButtons();raf=requestAnimationFrame(frame);
-}
-function pause(){
-  if(phase!=='running'&&phase!=='hold')return;
-  cancel();phase='paused';status('一時停止中');setButtons();
-}
-$('start').onclick=start;$('pause').onclick=pause;$('reset').onclick=reset;
-$('symbol').onchange=()=>$('letter').textContent=$('symbol').value;
-$('min').oninput=()=>{
-  const min=Number($('min').value);
-  if(Number($('max').value)<=min)$('max').value=Math.min(220,min+1);
-  size=min;paint();status('最小サイズをプレビュー中');
-};
-$('max').oninput=()=>{
-  const max=Number($('max').value);
-  if(max<=Number($('min').value))$('min').value=Math.max(12,max-1);
-  size=max;paint();status('最大サイズをプレビュー中');
-};
+function setButtons(){const active=phase==='running'||phase==='hold';$('start').disabled=active||phase==='done';$('pause').disabled=!active;$('start').textContent=phase==='paused'?'再開':phase==='done'?'終了':'開始';$('pause').textContent='一時停止';$('min').disabled=active;$('max').disabled=active;}
+function prepareAudio(){if(!$('sound').checked)return;const C=window.AudioContext||window.webkitAudioContext;if(!C)return;if(!audioContext)audioContext=new C();if(audioContext.state==='suspended')audioContext.resume();}
+function beep(){if(!$('sound').checked||!audioContext||audioContext.state!=='running')return;const now=audioContext.currentTime,o=audioContext.createOscillator(),g=audioContext.createGain();o.type='sine';o.frequency.setValueAtTime(880,now);g.gain.setValueAtTime(.0001,now);g.gain.exponentialRampToValueAtTime(.16,now+.008);g.gain.exponentialRampToValueAtTime(.0001,now+.105);o.connect(g);g.connect(audioContext.destination);o.start(now);o.stop(now+.11);}
+function setTargetSequence(){sequence=[...selected];if(!sequence.length)return;seqIndex=0;}
+function reset(){cancel();phase='idle';direction=1;cycles=0;size=bounds().min;sequence=[];seqIndex=0;document.body.classList.remove('is-running');$('board').classList.remove('running');$('status').textContent='使用する位置を選択してください';$('start').disabled=false;$('pause').disabled=true;$('start').textContent='開始';$('min').disabled=false;$('max').disabled=false;paint();}
+function exitRun(){cancel();phase='idle';document.body.classList.remove('is-running');$('board').classList.remove('running');$('start').disabled=false;$('start').textContent='開始';$('pause').disabled=true;$('min').disabled=false;$('max').disabled=false;cells.forEach(c=>c.querySelector('.target-letter').textContent='');status('トレーニングを終了しました');paint();}
+function finish(){cancel();phase='done';status('トレーニング終了');setButtons();paint();}
+function advanceCell(){seqIndex++;if(seqIndex>=sequence.length){seqIndex=0;cycles++;}if(cycles>=Number($('cycles').value)){finish();return false;}paint();return true;}
+function frame(t){if(phase!=='running'&&phase!=='hold')return;if(!last)last=t;const dt=Math.min((t-last)/1000,.1);last=t;const {min,max}=bounds();if(phase==='hold'){if(t>=holdUntil){phase='running';direction=direction===1?-1:1;status(direction===1?'大きくしています':'小さくしています');beep();}raf=requestAnimationFrame(frame);return;}size+=direction*Number($('speed').value)*dt;if(size>=max&&direction===1){size=max;phase='hold';holdUntil=t+Number($('hold').value);status('最大サイズでストップ');}else if(size<=min&&direction===-1){size=min;if(!advanceCell())return;phase='hold';holdUntil=t+Number($('hold').value);status('最小サイズでストップ');}paint();raf=requestAnimationFrame(frame);}
+function start(){if(phase==='running'||phase==='hold'||phase==='done')return;if(selected.size===0){status('使用する位置を1か所以上選択してください');return;}prepareAudio();if(phase!=='paused'){cycles=0;size=bounds().min;direction=1;setTargetSequence();}phase='running';last=0;document.body.classList.add('is-running');$('board').classList.add('running');status('大きくしています');setButtons();paint();try{if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{});}catch(e){}raf=requestAnimationFrame(frame);}
+function pause(){if(phase!=='running'&&phase!=='hold')return;cancel();phase='paused';status('一時停止中');setButtons();paint();}
+cells.forEach(c=>c.addEventListener('click',()=>{if(phase==='running'||phase==='hold'||phase==='paused')return;const id=c.dataset.pos;if(selected.has(id))selected.delete(id);else selected.add(id);paint();status(selected.size?`使用する位置を ${selected.size} か所選択中`:'1か所以上選択してください');}));
+$('start').onclick=start;$('pause').onclick=pause;$('reset').onclick=reset;$('exitRun').onclick=()=>{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});exitRun();};
+$('symbol').onchange=paint;
+$('min').oninput=()=>{const min=Number($('min').value);if(Number($('max').value)<=min)$('max').value=Math.min(220,min+1);size=min;paint();status('最小サイズをプレビュー中');};
+$('max').oninput=()=>{const max=Number($('max').value);if(max<=Number($('min').value))$('min').value=Math.max(12,max-1);size=max;paint();status('最大サイズをプレビュー中');};
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&(phase==='running'||phase==='hold')){/* iOS may not support fullscreen; CSS full-screen layout remains */}});
 paint();reset();
 })();
 </script>
