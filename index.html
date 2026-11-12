@@ -31,6 +31,8 @@ input[type=range]{width:100%;padding:0;margin:12px 0 0;accent-color:var(--teal);
 label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)}
 select{padding:10px}
 .small{font-size:12px;color:var(--muted);line-height:1.65}
+.sound-setting{display:flex;flex-direction:row;align-items:center;gap:8px;margin-top:14px;color:var(--ink);font-size:13px}
+.sound-setting input{width:18px;height:18px;accent-color:var(--teal)}
 footer{text-align:center;font-size:11px;color:#809095;margin-top:18px}
 </style>
 </head>
@@ -71,18 +73,19 @@ footer{text-align:center;font-size:11px;color:#809095;margin-top:18px}
       <label>往復回数<select id="cycles"><option value="1">1回</option><option value="3" selected>3回</option><option value="5">5回</option><option value="10">10回</option></select></label>
       <label>視標<select id="symbol"><option>A</option><option>あ</option><option>＋</option><option>●</option></select></label>
     </div>
-    <div class="small" style="margin-top:14px">スライダーで文字サイズの範囲を設定できます。最大サイズは最小サイズより大きく設定してください。</div>
+    <label class="sound-setting"><input id="sound" type="checkbox" checked>切り替わるときに電子音を鳴らす</label>
+    <div class="small" style="margin-top:10px">スライダーを動かすと、上の文字サイズも連動してプレビューできます。最大サイズは最小サイズより大きく設定してください。</div>
   </section>
 
   <section class="card">
     <div class="small">※文字サイズの変化を利用した試作版です。文字サイズを変えること自体が眼の調節を必ず引き起こすわけではありません。痛み・複視・めまい・強い疲労が出たら中止してください。</div>
   </section>
-  <footer>LiCo · Prototype 04</footer>
+  <footer>LiCo · Prototype 05</footer>
 </main>
 <script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id);
-let size=72,direction=1,phase='idle',cycles=0,raf=0,last=0,holdUntil=0;
+let size=72,direction=1,phase='idle',cycles=0,raf=0,last=0,holdUntil=0,audioContext=null;
 const bounds=()=>{
   let min=Number($('min').value),max=Number($('max').value);
   if(max<=min){max=Math.min(220,min+1);$('max').value=max}
@@ -102,6 +105,26 @@ function setButtons(){
   $('start').disabled=active||phase==='done';
   $('pause').disabled=!active;
   $('start').textContent=phase==='paused'?'再開':phase==='done'?'終了':'開始';
+  $('min').disabled=active;$('max').disabled=active;
+}
+function prepareAudio(){
+  if(!$('sound').checked)return;
+  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContextClass)return;
+  if(!audioContext)audioContext=new AudioContextClass();
+  if(audioContext.state==='suspended')audioContext.resume();
+}
+function beep(){
+  if(!$('sound').checked||!audioContext||audioContext.state!=='running')return;
+  const now=audioContext.currentTime;
+  const oscillator=audioContext.createOscillator();
+  const gain=audioContext.createGain();
+  oscillator.type='sine';oscillator.frequency.setValueAtTime(880,now);
+  gain.gain.setValueAtTime(0.0001,now);
+  gain.gain.exponentialRampToValueAtTime(0.16,now+0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001,now+0.105);
+  oscillator.connect(gain);gain.connect(audioContext.destination);
+  oscillator.start(now);oscillator.stop(now+0.11);
 }
 function reset(){
   cancel();phase='idle';direction=1;cycles=0;size=bounds().min;
@@ -116,6 +139,7 @@ function frame(t){
     if(t>=holdUntil){
       phase='running';direction=direction===1?-1:1;
       status(direction===1?'大きくしています':'小さくしています');
+      beep();
     }
     raf=requestAnimationFrame(frame);return;
   }
@@ -133,6 +157,7 @@ function frame(t){
 }
 function start(){
   if(phase==='running'||phase==='hold'||phase==='done')return;
+  prepareAudio();
   if(phase!=='paused'){cycles=0;size=bounds().min;direction=1}
   phase='running';last=0;status('大きくしています');setButtons();raf=requestAnimationFrame(frame);
 }
@@ -145,12 +170,12 @@ $('symbol').onchange=()=>$('letter').textContent=$('symbol').value;
 $('min').oninput=()=>{
   const min=Number($('min').value);
   if(Number($('max').value)<=min)$('max').value=Math.min(220,min+1);
-  paint();
+  size=min;paint();status('最小サイズをプレビュー中');
 };
 $('max').oninput=()=>{
   const max=Number($('max').value);
   if(max<=Number($('min').value))$('min').value=Math.max(12,max-1);
-  paint();
+  size=max;paint();status('最大サイズをプレビュー中');
 };
 paint();reset();
 })();
