@@ -29,7 +29,7 @@ function reset(){cancel();phase='idle';direction=1;cycles=0;size=bounds().min;se
 function finish(){cancel();phase='done';status('トレーニング終了');buttons();paint()}
 function nextPosition(){seqIndex++;if(seqIndex>=sequence.length){seqIndex=0;cycles++}if(cycles>=+$('cycles').value){finish();return false}paint();return true}
 function frame(t){if(phase!=='running'&&phase!=='hold')return;if(!last)last=t;let dt=Math.min((t-last)/1000,.1);last=t;const{min,max}=bounds();
-if(phase==='hold'){if(t>=holdUntil){phase='running';if(mode==='gradient'){direction=direction===1?-1:1;status(direction===1?'徐々に拡大':'徐々に縮小')}else{size=size===min?max:min;status(size===max?'最大サイズに切り替え':'最小サイズに切り替え');beep()}paint()}raf=requestAnimationFrame(frame);return}
+if(phase==='hold'){if(t>=holdUntil){phase='running';if(mode==='gradient'){direction=direction===1?-1:1;status(direction===1?'徐々に拡大':'徐々に縮小')}else{const wasMax=size>=max;size=wasMax?min:max;if(wasMax){if(!nextPosition())return;status('最小サイズに切り替え')}else{status('最大サイズに切り替え')}beep()}paint()}raf=requestAnimationFrame(frame);return}
 if(mode==='gradient'){size+=direction*+$('speed').value*dt;if(size>=max&&direction===1){size=max;phase='hold';holdUntil=t+ +$('hold').value;status('最大サイズで保持');beep()}else if(size<=min&&direction===-1){size=min;if(!nextPosition())return;phase='hold';holdUntil=t+ +$('hold').value;status('最小サイズで保持');beep()}}
 else{phase='hold';holdUntil=t+ +$('hold').value;status(size===min?'最小サイズで保持':'最大サイズで保持')}
 paint();raf=requestAnimationFrame(frame)}
