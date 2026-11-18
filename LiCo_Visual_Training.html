@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f3f6f5">
+<title>LiCo 視線トレーニング</title>
+<style>
+:root{--ink:#173340;--teal:#247b78;--bg:#f3f6f5;--muted:#65777d;--target:22px}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif}
+body{overscroll-behavior:none}
+main{max-width:620px;margin:auto;padding:calc(14px + env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom))}
+.brand{font-size:12px;letter-spacing:.15em;color:var(--teal);font-weight:800}
+h1{font-size:22px;margin:4px 0}.hint,.small{font-size:12px;color:var(--muted);line-height:1.6}
+.card{background:#fff;border-radius:20px;padding:14px;margin-top:12px;box-shadow:0 4px 18px #1539430a}
+.segment{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+button,select{font:inherit;border:1px solid #dbe5e3;border-radius:12px;padding:12px;background:#f0f5f4;color:var(--ink);min-width:0}
+button{font-weight:700;min-height:46px;touch-action:manipulation}
+button.primary,.segment button.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+button:disabled{opacity:.45}
+.board{position:relative;width:100%;height:min(48svh,440px);min-height:270px;border-radius:16px;background:linear-gradient(135deg,#e8f0ee,#f5f8f7);border:1px solid #dce7e4;overflow:hidden;touch-action:none}
+.track{position:absolute;inset:10%;border:1px dashed #cbdad6;border-radius:12px;opacity:.65}
+.target{position:absolute;width:var(--target);height:var(--target);border-radius:50%;background:var(--teal);box-shadow:0 0 0 9px #247b7820,0 2px 8px #17334025;transform:translate(-50%,-50%);left:50%;top:50%;display:none}
+.target.visible{display:block}.target:after{content:"";position:absolute;inset:28%;border-radius:50%;background:#fff}
+.board-message{position:absolute;inset:0;display:grid;place-content:center;text-align:center;padding:28px;font-size:17px;font-weight:750;line-height:1.6;color:var(--ink);pointer-events:none}
+.board-message span{display:block;font-size:13px;color:var(--muted);font-weight:500}
+.status{text-align:center;margin:10px 0 2px;font-size:14px;font-weight:700;min-height:22px}
+.detail{text-align:center;color:var(--muted);font-size:12px;min-height:18px}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:9px}.controls #reset{grid-column:1/-1}
+.setting{margin-top:14px}.setting-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700}
+.setting-head output{color:var(--teal);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;padding:0;margin:10px 0 0;accent-color:var(--teal);border:0;background:transparent}
+.range-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+label.select-label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted);font-weight:600}
+select{padding:10px;width:100%}.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:14px}
+.note{font-size:11px;color:#73858a;line-height:1.6;margin-top:12px}
+.runbar{display:none;position:fixed;z-index:30;top:calc(8px + env(safe-area-inset-top));left:12px;right:12px;align-items:center;justify-content:space-between;gap:8px;pointer-events:none}
+.runbar>*{pointer-events:auto}.runbar button,.runstatus{background:#ffffffed;border:1px solid #dbe5e3;border-radius:22px;padding:9px 14px;font-size:12px;min-height:38px}
+.runstatus{font-weight:750}
+body.running{overflow:hidden}body.running main{padding:0;max-width:none}
+body.running .header,body.running .settings,body.running .control-card,body.running .note-card{display:none}
+body.running .board-card{position:fixed;inset:0;margin:0;padding:0;border-radius:0;z-index:20;background:#f3f6f5}
+body.running .board{width:100%;height:100%;height:100dvh;max-width:none;min-height:0;border:0;border-radius:0}
+body.running .track{inset:14%}body.running .runbar{display:flex}
+body.running .status{position:fixed;z-index:31;bottom:calc(14px + env(safe-area-inset-bottom));left:12px;right:12px;background:#ffffffeb;border-radius:20px;padding:12px;margin:0}
+body.running .detail{display:none}
+@media(max-width:380px){.settings-grid{grid-template-columns:1fr}.board{min-height:250px}}
+</style>
+</head>
+<body>
+<main>
+<header class="header"><div class="brand">LiCo · LIFE COORDINATE</div><h1>視線トレーニング</h1><div class="hint">スムーズパシュートとサッカードを選択してトレーニングします。</div></header>
+<section class="card"><div class="segment" id="typeTabs"><button class="active" data-type="pursuit">スムーズパシュート</button><button data-type="saccade">サッカード</button></div><div class="small" id="typeDescription" style="margin-top:9px">動くターゲットを目で滑らかに追い続けます。</div></section>
+<section class="card board-card"><div class="board" id="board"><div class="track"></div><div class="target" id="target"></div><div class="board-message" id="message">開始ボタンを押してください<span>ターゲットを目で追います</span></div></div><div class="status" id="status">準備完了</div><div class="detail" id="detail">方向：左 ⇔ 右 · 動作：往復</div></section>
+<section class="card control-card"><div class="controls"><button class="primary" id="start">開始</button><button id="pause" disabled>一時停止</button><button id="reset">リセット</button></div></section>
+<section class="card settings">
+<div class="setting-head"><span>方向・動作設定</span></div>
+<div class="settings-grid">
+<label class="select-label">トレーニング方向<select id="direction"><option value="horizontal">左 ⇔ 右</option><option value="vertical">上 ⇔ 下</option><option value="diag1">左上 ⇔ 右下</option><option value="diag2">右上 ⇔ 左下</option><option value="random">ランダム</option></select></label>
+<label class="select-label">動作パターン<select id="pattern"><option value="round">往復</option><option value="repeat">単一方向の反復</option></select></label>
+</div>
+<div class="setting"><div class="setting-head"><span id="speedLabel">移動スピード</span><output id="speedOut">標準</output></div><input id="speed" type="range" min="1" max="5" value="3" step="1"><div class="range-labels"><span>ゆっくり</span><span>速い</span></div></div>
+<div class="settings-grid">
+<label class="select-label">反復回数<select id="cycles"><option value="3">3回</option><option value="5" selected>5回</option><option value="10">10回</option><option value="20">20回</option><option value="0">連続</option></select></label>
+<label class="select-label" id="pauseSetting">注視時間<select id="dwell"><option value="300">短い</option><option value="600" selected>標準</option><option value="1000">長い</option><option value="1500">ゆっくり</option></select></label>
+</div>
+<div class="note">単一方向の反復では、ターゲットが進む方向を目で追い、スタート位置へ戻る間は目を閉じます。戻り終えたら目を開けて次の反復を始めます。</div>
+</section>
+<section class="card note-card"><div class="small">※画面上のターゲットを無理のない範囲で追ってください。眼の痛み、複視、めまい、吐き気、強い疲労が出た場合は中止してください。画面との距離を保ち、周囲の安全を確保して使用してください。</div></section>
+<footer class="note" style="text-align:center">LiCo · Visual Training Prototype</footer>
+</main>
+<div class="runbar"><span class="runstatus" id="runStatus">トレーニング中</span><button id="exit">終了</button></div>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+let type='pursuit',phase='idle',raf=0,last=0,cycle=0,leg=0,from={x:.12,y:.5},to={x:.88,y:.5},pos={x:.5,y:.5},startedAt=0,legDuration=0,randomDirection='horizontal',resumePhase='outbound',pauseAt=0;
+const speedNames=['かなりゆっくり','ゆっくり','標準','速い','かなり速い'],speedMs=[7,5.5,4,2.8,1.8];
+function selectedDirection(){const v=$('direction').value;return v!=='random'?v:['horizontal','vertical','diag1','diag2'][Math.floor(Math.random()*4)]}
+function endpoints(d){if(d==='vertical')return [{x:.5,y:.13},{x:.5,y:.87}];if(d==='diag1')return [{x:.13,y:.13},{x:.87,y:.87}];if(d==='diag2')return [{x:.87,y:.13},{x:.13,y:.87}];return [{x:.13,y:.5},{x:.87,y:.5}]}
+function setTarget(p,visible=true){pos={x:p.x,y:p.y};$('target').style.left=(p.x*100)+'%';$('target').style.top=(p.y*100)+'%';$('target').classList.toggle('visible',visible)}
+function setMessage(main,sub=''){$('message').innerHTML=main+(sub?'<span>'+sub+'</span>':'')}
+function updateDetail(){$('detail').textContent='方向：'+$('direction').selectedOptions[0].text+' · 動作：'+$('pattern').selectedOptions[0].text}
+function updateType(){document.querySelectorAll('[data-type]').forEach(b=>b.classList.toggle('active',b.dataset.type===type));$('typeDescription').textContent=type==='pursuit'?'動くターゲットを目で滑らかに追い続けます。':'ターゲットが瞬間的に切り替わる位置へ視線を移します。';$('speedLabel').textContent=type==='pursuit'?'移動スピード':'切り替えスピード'}
+function updateSpeed(){$('speedOut').textContent=speedNames[+$('speed').value-1]}
+function cancel(){cancelAnimationFrame(raf);raf=0;last=0}
+function setStatus(s){$('status').textContent=s;$('runStatus').textContent=s}
+function setButtons(){const active=['outbound','return','closed','dwell','paused'].includes(phase);$('start').disabled=active||phase==='done';$('pause').disabled=!active;$('start').textContent=phase==='paused'?'再開':phase==='done'?'終了':'開始'}
+function finish(){cancel();phase='done';setStatus('トレーニング終了');setMessage('トレーニング終了','お疲れさまでした');setButtons()}
+function prepareLeg(){if($('pattern').value==='repeat'||leg===0)randomDirection=selectedDirection();const e=endpoints(randomDirection);if($('pattern').value==='repeat'){from=e[0];to=e[1]}else if(leg===0){from=e[0];to=e[1]}else{from=e[1];to=e[0]}setTarget(from);startedAt=0;legDuration=type==='pursuit'?speedMs[+$('speed').value-1]*1000:[1100,850,650,450,300][+$('speed').value-1];phase='outbound';setStatus(type==='pursuit'?'ターゲットを追ってください':'ターゲットを見てください');setMessage('')}
+function start(){if(['outbound','return','closed','dwell'].includes(phase)||phase==='done')return;if(phase==='paused'){phase=resumePhase;const pausedFor=performance.now()-pauseAt;if(startedAt)startedAt+=pausedFor;pauseAt=0}else{cycle=0;leg=0;prepareLeg()}document.body.classList.add('running');last=0;setButtons();raf=requestAnimationFrame(frame)}
+function nextCycle(){cycle++;if(+$('cycles').value!==0&&cycle>=+$('cycles').value){finish();return false}leg=0;prepareLeg();return true}
+function beginReturn(){phase='closed';setTarget(pos,false);setStatus('目を閉じてください');setMessage('目を閉じてください','ターゲットがスタート位置へゆっくり戻ります');startedAt=0;legDuration=1800}
+function afterDwell(){if($('pattern').value==='repeat'){beginReturn();return}if(leg===0){leg=1;prepareLeg()}else{nextCycle()}}
+function frame(t){if(!['outbound','return','closed','dwell'].includes(phase))return;if(!last)last=t;last=t;
+if(phase==='outbound'){
+ if(type==='pursuit'){if(!startedAt)startedAt=t;const p=Math.min(1,(t-startedAt)/legDuration);setTarget({x:from.x+(to.x-from.x)*p,y:from.y+(to.y-from.y)*p});if(p>=1){phase='dwell';startedAt=t;setStatus('次の動きへ');setMessage('')}}
+ else{if(!startedAt)startedAt=t;setTarget(to);if(t-startedAt>=legDuration){phase='dwell';startedAt=t;setStatus('次の位置へ')}}
+}else if(phase==='dwell'){const wait=+$('dwell').value;if(t-startedAt>=wait)afterDwell()}
+else if(phase==='closed'){if(!startedAt)startedAt=t;const p=Math.min(1,(t-startedAt)/legDuration);setTarget({x:to.x+(from.x-to.x)*p,y:to.y+(from.y-to.y)*p},false);if(p>=1){setTarget(from,true);if(nextCycle()){phase='outbound';setStatus('目を開けてターゲットを追ってください');setMessage('目を開けてください','次の反復を始めます')}}}
+setButtons();raf=requestAnimationFrame(frame)}
+function pause(){if(!['outbound','return','closed','dwell'].includes(phase))return;resumePhase=phase;pauseAt=performance.now();cancel();phase='paused';setStatus('一時停止中');setMessage('一時停止中');setButtons()}
+function reset(){cancel();phase='idle';cycle=0;leg=0;document.body.classList.remove('running');setTarget({x:.5,y:.5},false);setMessage('開始ボタンを押してください','ターゲットを目で追います');setStatus('準備完了');setButtons();updateDetail()}
+function exit(){reset()}
+document.querySelectorAll('[data-type]').forEach(b=>b.onclick=()=>{if(document.body.classList.contains('running'))return;type=b.dataset.type;updateType();reset()});
+$('start').onclick=start;$('pause').onclick=pause;$('reset').onclick=reset;$('exit').onclick=exit;$('speed').oninput=updateSpeed;['direction','pattern'].forEach(id=>$(id).onchange=()=>{updateDetail();reset()});
+updateType();updateSpeed();updateDetail();reset();
+})();
+</script>
+</body>
+</html>
